@@ -1,14 +1,18 @@
 import streamlit as st
-from google import genai
+import google.generativeai as genai
 
-# ── Hardcoded config (from original code) ────────────────────────────────────
+# ── Hardcoded config ──────────────────────────────────────────────────────────
 API_KEY = "AIzaSyDymw04y6EiYYzCD3KaXnQ9rVtt-Sh7trc"
 KB_FILE = "IRCTC.txt"
 
-with open(KB_FILE, "r") as f:
+# ── Load knowledge base ───────────────────────────────────────────────────────
+with open(KB_FILE, "r", encoding="utf-8") as f:
     KB_TEXT = f.read()
 
-# ── Page config ──────────────────────────────────────────────────────────────
+# ── Configure Gemini ──────────────────────────────────────────────────────────
+genai.configure(api_key=API_KEY)
+
+# ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="IRCTC Customer Care",
     page_icon="🚂",
@@ -18,10 +22,10 @@ st.set_page_config(
 # ── Custom CSS ────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    /* Main background */
-    .stApp { background-color: #f0f4f8; }
+    .stApp {
+        background-color: #f0f4f8;
+    }
 
-    /* Header banner */
     .irctc-header {
         background: linear-gradient(135deg, #003580 0%, #0057b8 100%);
         color: white;
@@ -32,10 +36,18 @@ st.markdown("""
         align-items: center;
         gap: 1rem;
     }
-    .irctc-header h1 { margin: 0; font-size: 1.6rem; }
-    .irctc-header p  { margin: 0; font-size: 0.85rem; opacity: 0.85; }
 
-    /* Chat bubbles */
+    .irctc-header h1 {
+        margin: 0;
+        font-size: 1.6rem;
+    }
+
+    .irctc-header p {
+        margin: 0;
+        font-size: 0.85rem;
+        opacity: 0.85;
+    }
+
     .user-bubble {
         background: #0057b8;
         color: white;
@@ -46,6 +58,7 @@ st.markdown("""
         margin-bottom: 0.5rem;
         word-wrap: break-word;
     }
+
     .bot-bubble {
         background: white;
         color: #1a1a2e;
@@ -57,19 +70,23 @@ st.markdown("""
         box-shadow: 0 1px 4px rgba(0,0,0,0.08);
         word-wrap: break-word;
     }
+
     .chat-label {
         font-size: 0.7rem;
         opacity: 0.55;
         margin-bottom: 2px;
     }
-    .chat-label.right { text-align: right; }
 
-    /* Input area */
+    .chat-label.right {
+        text-align: right;
+    }
+
     .stTextInput > div > div > input {
         border-radius: 24px !important;
         border: 2px solid #c8d8f0 !important;
         padding: 0.6rem 1.1rem !important;
     }
+
     .stButton > button {
         border-radius: 24px !important;
         background: #0057b8 !important;
@@ -78,10 +95,14 @@ st.markdown("""
         padding: 0.55rem 1.4rem !important;
         font-weight: 600 !important;
     }
-    .stButton > button:hover { background: #003d87 !important; }
 
-    /* Sidebar */
-    .stSidebar { background-color: #e8eef7; }
+    .stButton > button:hover {
+        background: #003d87 !important;
+    }
+
+    .stSidebar {
+        background-color: #e8eef7;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -99,91 +120,153 @@ st.markdown("""
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.header("🚂 IRCTC Assistant")
-    st.markdown("Powered by Gemini 2.5 Flash")
+    st.markdown("Powered by Gemini")
+
     st.markdown("---")
+
     if st.button("🗑️ Clear Chat"):
         st.session_state.messages = []
-        st.session_state.chat     = None
+        st.session_state.chat = None
         st.rerun()
 
     st.markdown("---")
-    st.markdown("**Suggested questions**")
+    st.markdown("### Suggested Questions")
+
     suggestions = [
         "IRCTC customer care number",
         "How to cancel a ticket?",
         "What is the refund policy?",
         "How to check PNR status?",
     ]
+
     for q in suggestions:
-        if st.button(q, key=f"sugg_{q}"):
+        if st.button(q, key=q):
             st.session_state.pending_input = q
 
-# ── Session state init ────────────────────────────────────────────────────────
-if "messages"      not in st.session_state: st.session_state.messages      = []
-if "chat"          not in st.session_state: st.session_state.chat          = None
-if "pending_input" not in st.session_state: st.session_state.pending_input = ""
+# ── Session State ─────────────────────────────────────────────────────────────
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-# ── Build / cache chat session ────────────────────────────────────────────────
+if "chat" not in st.session_state:
+    st.session_state.chat = None
+
+if "pending_input" not in st.session_state:
+    st.session_state.pending_input = ""
+
+# ── Create Chat Session ───────────────────────────────────────────────────────
 def get_chat():
-    """Create (or return cached) Gemini chat session."""
     if st.session_state.chat is None:
-        prompt = f"""
-you are IRCTC Customer care executive your job is to provide answers to the questions asked by the customer,you should reply them politely,if the question is out of kb just say I don't know the info,only refer kb and provide the info.
+
+        system_prompt = f"""
+You are an IRCTC Customer Care Executive.
+
+Your job:
+- Reply politely and professionally.
+- Only answer from the provided knowledge base.
+- If information is unavailable, reply:
+  "I don't know the information."
+- Do not make up answers.
+
+Knowledge Base:
 {KB_TEXT}
 """
-        client = genai.Client(api_key=API_KEY)
-        st.session_state.chat = client.chats.create(
-            model="gemini-2.5-flash",
-            config={"system_instruction": prompt},
+
+        model = genai.GenerativeModel(
+            model_name="gemini-1.5-flash",
+            system_instruction=system_prompt
         )
+
+        st.session_state.chat = model.start_chat(history=[])
+
     return st.session_state.chat
 
-# ── Chat display ──────────────────────────────────────────────────────────────
+# ── Display Chat ──────────────────────────────────────────────────────────────
 chat_container = st.container()
+
 with chat_container:
+
     if not st.session_state.messages:
         st.markdown(
-            "<p style='text-align:center;color:#888;margin-top:2rem'>"
-            "👋 Hello! How can I help you today?</p>",
+            """
+            <p style='text-align:center;color:#888;margin-top:2rem'>
+            👋 Hello! How can I help you today?
+            </p>
+            """,
             unsafe_allow_html=True,
         )
-    for msg in st.session_state.messages:
-        if msg["role"] == "user":
-            st.markdown('<p class="chat-label right">You</p>', unsafe_allow_html=True)
-            st.markdown(f'<div class="user-bubble">{msg["content"]}</div>',
-                        unsafe_allow_html=True)
-        else:
-            st.markdown('<p class="chat-label">🚂 IRCTC Assistant</p>',
-                        unsafe_allow_html=True)
-            st.markdown(f'<div class="bot-bubble">{msg["content"]}</div>',
-                        unsafe_allow_html=True)
 
-# ── Input ─────────────────────────────────────────────────────────────────────
+    for msg in st.session_state.messages:
+
+        if msg["role"] == "user":
+
+            st.markdown(
+                '<p class="chat-label right">You</p>',
+                unsafe_allow_html=True
+            )
+
+            st.markdown(
+                f'<div class="user-bubble">{msg["content"]}</div>',
+                unsafe_allow_html=True
+            )
+
+        else:
+
+            st.markdown(
+                '<p class="chat-label">🚂 IRCTC Assistant</p>',
+                unsafe_allow_html=True
+            )
+
+            st.markdown(
+                f'<div class="bot-bubble">{msg["content"]}</div>',
+                unsafe_allow_html=True
+            )
+
+# ── Input Area ────────────────────────────────────────────────────────────────
 st.markdown("<br>", unsafe_allow_html=True)
+
 col1, col2 = st.columns([5, 1])
+
 with col1:
     default_val = st.session_state.pending_input
-    user_input  = st.text_input("Your question", value=default_val,
-                                placeholder="Type your question here…",
-                                label_visibility="collapsed", key="user_input")
+
+    user_input = st.text_input(
+        "Your question",
+        value=default_val,
+        placeholder="Type your question here...",
+        label_visibility="collapsed",
+        key="user_input"
+    )
+
 with col2:
     send = st.button("Send")
 
-# Clear pending after it's been placed in the input
+# ── Clear Pending Input ───────────────────────────────────────────────────────
 if st.session_state.pending_input:
     st.session_state.pending_input = ""
 
-# ── Handle send ───────────────────────────────────────────────────────────────
+# ── Handle Message ────────────────────────────────────────────────────────────
 if send and user_input.strip():
-    st.session_state.messages.append({"role": "user", "content": user_input})
 
-    with st.spinner("Fetching answer…"):
+    st.session_state.messages.append({
+        "role": "user",
+        "content": user_input
+    })
+
+    with st.spinner("Fetching answer..."):
+
         try:
-            chat   = get_chat()
-            resp   = chat.send_message(user_input)
-            answer = resp.text
-        except Exception as e:
-            answer = f"❌ Error: {e}"
+            chat = get_chat()
 
-    st.session_state.messages.append({"role": "assistant", "content": answer})
+            response = chat.send_message(user_input)
+
+            answer = response.text
+
+        except Exception as e:
+            answer = f"❌ Error: {str(e)}"
+
+    st.session_state.messages.append({
+        "role": "assistant",
+        "content": answer
+    })
+
     st.rerun()
