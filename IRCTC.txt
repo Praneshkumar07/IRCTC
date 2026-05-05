@@ -1,0 +1,171 @@
+ABOUT IRCTC
+
+IRCTC (Indian Railway Catering and Tourism Corporation) is the official online railway ticket booking platform of Indian Railways
+
+Website: www.irctc.co.in
+
+Customer Care: 14646, 080-44XX-7XXX
+
+TICKET BOOKING
+
+Login is required to book tickets
+
+Advance Reservation Period (ARP): 120 days
+
+Tatkal booking:
+
+10:00 AM AC classes
+
+11:00 AM Non-AC classes
+
+Payment methods:
+
+1
+
+Debit Card/Credit Card
+
+Net Banking
+
+UPI
+
+Wallets
+
+CANCELLATION & REFUND
+
+Tickets can be cancelled online through IRCTC account
+
+Refund rules:
+
+>48 hours before departure: Full refund minus clerkage
+
+48-12 hours: 25% deduction clerkage
+
+12-4 hours: 50% deduction+ clerkage
+
+<4 hours: No refund (except special cases)
+
+TDR (Ticket Deposit Receipt) can be filed for:
+
+Train cancellation
+
+Train running late
+
+AC failure
+
+Coach not attached
+
+PNR STATUS
+
+I
+
+PNR is a 10-digit number printed on ticket
+
+Check via:
+
+IRCTC website
+
+
+SMS: PNR <space> number 139
+
+Common status codes:
+
+CNF Confirmed
+RAC Reservation Against Cancellation
+
+WL Waitlisted
+
+TRAIN RUNNING STATUS
+
+Live train running status can be checked using:
+
+IRCTC website
+
+INTES (National Train Enquiry System)
+
+SMS: AD <Train Number> → 139
+
+Information available:
+
+Current location of train
+
+Delay (if any)Security / Safety Issues
+
+Railway Protection Force (RPF)
+
+Contact:
+
+Helpline: 182
+
+SMS/App: RailMadad
+
+COMMON ISSUES
+
+Forgot password: Use "Forgot Password" on login page
+
+Payment failed but amount deducted:
+
+Auto-refund within 7-10 working days
+
+Login issues:
+
+Clear browser cache
+
+Try a different browser
+
+Ticket not visible:
+
+Check Booked Ticket History
+
+E-TICKETS
+
+Can be downloaded or printed after booking
+
+Showing ticket on mobile is allowed with valid photo ID IRCTC Chatbot Sample Dataset (Text Format)
+
+book_ticket: I want to book a train ticket from Chennai to Bangalore
+book_ticket: Book ticket Delhi to Mumbai for tomorrow
+check_pnr: Check my PNR status 1234567890
+check_pnr: Is my ticket confirmed? PNR 9876543210
+cancel_ticket: Cancel my train ticket
+cancel_ticket: I want to cancel PNR 4567891230
+train_status: Where is my train right now?
+train_status: Live status of train 12627
+seat_availability: Are seats available from Chennai to Hyderabad?
+fare_enquiry: What is the ticket price for sleeper class?
+greeting: Hi
+greeting: Hello chatbot
+goodbye: Bye
+goodbye: See you later
+
+ TRAIN DATA
+
+Train No: 12627
+Train Name: Karnataka Express
+Source: Chennai
+Destination: Bangalore
+Departure: 06:00
+Arrival: 12:00
+Classes: SL, 3AC, 2AC
+Fare: SL-250, 3AC-700, 2AC-1100
+
+Train No: 12028
+Train Name: Shatabdi Express
+Source: Bangalore
+Destination: Chennai
+Departure: 14:30
+Arrival: 20:00
+Classes: CC, EC
+Fare: CC-800, EC-1500
+
+
+PNR: 1234567890
+Train No: 12627
+Status: Confirmed
+Seat: S5-32
+
+PNR: 9876543210
+Train No: 12028
+Status: Waiting List
+Seat: WL 12
+
+
