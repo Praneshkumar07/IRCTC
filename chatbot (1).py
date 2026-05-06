@@ -104,6 +104,19 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# ── Session state ──────────────────────────────────────────────────────────────
+if "messages"      not in st.session_state:
+    st.session_state.messages      = []
+if "pending_input" not in st.session_state:
+    st.session_state.pending_input = ""
+if "client"        not in st.session_state:
+    st.session_state.client        = genai.Client(api_key=API_KEY)
+if "chat"          not in st.session_state:
+    st.session_state.chat          = st.session_state.client.chats.create(
+        model="gemini-2.5-flash",
+        config={"system_instruction": SYSTEM_PROMPT},
+    )
+
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.header("🚂 IRCTC Assistant")
@@ -112,7 +125,12 @@ with st.sidebar:
 
     if st.button("🗑️ Clear Chat"):
         st.session_state.messages = []
-        st.session_state.chat = None
+        # Recreate client and chat on clear
+        st.session_state.client = genai.Client(api_key=API_KEY)
+        st.session_state.chat   = st.session_state.client.chats.create(
+            model="gemini-2.5-flash",
+            config={"system_instruction": SYSTEM_PROMPT},
+        )
         st.rerun()
 
     st.markdown("---")
@@ -120,25 +138,6 @@ with st.sidebar:
     for q in SUGGESTIONS:
         if st.button(q, key=f"sugg_{q}"):
             st.session_state.pending_input = q
-
-# ── Session state ──────────────────────────────────────────────────────────────
-if "messages"      not in st.session_state:
-    st.session_state.messages      = []
-if "chat"          not in st.session_state:
-    st.session_state.chat          = None
-if "pending_input" not in st.session_state:
-    st.session_state.pending_input = ""
-
-# ── Build / cache Gemini chat session ─────────────────────────────────────────
-def get_chat():
-    """Create (or return cached) Gemini chat session."""
-    if st.session_state.chat is None:
-        client = genai.Client(api_key=API_KEY)
-        st.session_state.chat = client.chats.create(
-            model="gemini-2.5-flash",
-            config={"system_instruction": SYSTEM_PROMPT},
-        )
-    return st.session_state.chat
 
 # ── Chat display ───────────────────────────────────────────────────────────────
 chat_container = st.container()
@@ -171,7 +170,6 @@ with col1:
 with col2:
     send = st.button("Send")
 
-# Clear pending after it's been placed in the input
 if st.session_state.pending_input:
     st.session_state.pending_input = ""
 
@@ -181,8 +179,7 @@ if send and user_input.strip():
 
     with st.spinner("Fetching answer…"):
         try:
-            chat   = get_chat()
-            resp   = chat.send_message(user_input)
+            resp   = st.session_state.chat.send_message(user_input)
             answer = resp.text
         except Exception as e:
             answer = f"❌ Error: {e}"
