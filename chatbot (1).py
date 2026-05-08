@@ -2,7 +2,7 @@ import streamlit as st
 from google import genai
 
 # ── Config ─────────────────────────────────────────────────────────────────────
-API_KEY = "AIzaSyAhaFFgBlp7cnTb2mV7iU3uZHUCUfTbTsk"  # Set your Gemini API key here
+API_KEY = "AIzaSyBhh8k27kPJ_iIpuzpO_WRA4zduVGUs3z0"  # Set your Gemini API key here
 KB_FILE = "IRCTC.txt"
 
 try:
